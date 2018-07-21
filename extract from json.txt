@@ -1,0 +1,51 @@
+hadoop fs -put vegeatblePriceData hdfs://nn.cdh2017.com:8020/user/Jig13895/
+vData= LOAD '/user/Jig13895/vegeatblePriceData/jsonSample.txt' USING JsonLoader();
+
+(or)
+
+vData= LOAD '/user/Jig13895/vegeatblePriceData/jsonSample.txt' USING JsonLoader(document_id:chararray,timestamp:chararray,state:chararray,district:chararray,market:chararray,commodity:chararray,variety:chararray,arrival_date:chararray,min_price:chararray,max_price:chararray,modal_price:chararray);
+dump vData;
+
+
+vData= LOAD '/user/Jig13895/vegeatblePriceData/jsonSample.txt' USING PigJsonLoader();
+
+
+
+
+vData= LOAD '/user/Jig13895/vegeatblePriceData/jsonSampleNew.txt' USING JsonLoader();
+vData= LOAD '/user/Jig13895/vegeatblePriceData/jsonSampleNew.txt' USING JsonLoader(document_id:chararray,timestamp:chararray,state:chararray,district:chararray,market:chararray,commodity:chararray,variety:chararray,arrival_date:chararray,min_price:chararray,max_price:chararray,modal_price:chararray);
+
+
+second_table = LOAD '/user/Jig13895/vegeatblePriceData/second_table.json' 
+    USING JsonLoader('food:chararray, person:chararray, amount:int');
+dump second_table; 
+
+second_table = LOAD '/user/Jig13895/vegeatblePriceData/second_tableCopy.json' 
+    USING JsonLoader('food:chararray, person:chararray, amount:int');
+
+
+
+
+third_table = LOAD 'third_table.json' 
+    USING JsonLoader('recipe:chararray, 
+                      ingredients: {(name:chararray)}, 
+                      inventor: (name:chararray, age:int)');
+
+
+{"recipe":"Tacos","ingredients":[{"name":"Beef"},{"name":"Lettuce"},{"name":"Cheese"}],"inventor":{"name":"Alex","age":25}}
+{"recipe":"TomatoSoup","ingredients":[{"name":"Tomatoes"},{"name":"Milk"}],"inventor":{"name":"Steve","age":23}}
+
+
+
+first_table = LOAD 'first_table.dat' 
+    USING PigStorage() 
+    AS (col1:chararray);
+
+...
+
+STORE first_table 
+    INTO 'first_table.json' 
+    USING JsonStorage();
+
+
+

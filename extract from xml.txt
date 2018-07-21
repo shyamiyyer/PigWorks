@@ -1,0 +1,38 @@
+hadoop fs -put vegeatblePriceData hdfs://nn.cdh2017.com:8020/user/Jig13895/
+hadoop fs -put Sample.xml hdfs://nn.cdh2017.com:8020/user/Jig13895/vegeatblePriceData/
+
+
+
+using REGEX:
+------------
+register '/home/data/piggybank.jar';
+vData= LOAD '/user/Jig13895/vegeatblePriceData/VegDataNew.xml' USING org.apache.pig.piggybank.storage.XMLLoader('Table') as (x:chararray);
+vout= FOREACH vData GENERATE REGEX_EXTRACT_ALL(x,'<Table>\\s*<State>(.*)</State>\\s*</Table>');
+
+register '/home/data/piggybank.jar';
+vData= LOAD '/user/Jig13895/vegeatblePriceData/Carrot_2014.xml' USING org.apache.pig.piggybank.storage.XMLLoader('Table') as (x:chararray);
+vout= FOREACH vData GENERATE REGEX_EXTRACT_ALL(x,'<Table>\\s*<State>(.*)</State>\\s*</Table>');
+
+register '/home/data/piggybank.jar';
+vData= LOAD '/user/Jig13895/vegeatblePriceData/Sample.xml' USING org.apache.pig.piggybank.storage.XMLLoader('BOOK') as (x:chararray);
+vout= FOREACH vData GENERATE REGEX_EXTRACT_ALL(x,'<BOOK>\\s*<TITLE>(.*)</TITLE>\\s*</BOOK>');
+
+B = foreach vData GENERATE FLATTEN(REGEX_EXTRACT_ALL(x,'<BOOK>\\s*<TITLE>(.*)</TITLE>\\s*<AUTHOR>(.*)</AUTHOR>\\s*<COUNTRY>(.*)</COUNTRY>\\s*<COMPANY>(.*)</COMPANY>\\s*<PRICE>(.*)</PRICE>\\s*<YEAR>(.*)</YEAR>\\s*</BOOK>'));
+
+ dump B;
+
+
+
+ B = foreach A GENERATE FLATTEN(REGEX_EXTRACT_ALL(x,‘<BOOK>\\s*<TITLE>(.*)</TITLE>\\s*<AUTHOR>(.*)</AUTHOR>\\s*<COUNTRY>(.*)</COUNTRY>\\s*<COMPANY>(.*)</COMPANY>\\s*<PRICE>(.*)</PRICE>\\s*<YEAR>(.*)</YEAR>\\s*</BOOK>’));
+
+ dump B;
+
+using x path:
+-------------
+
+register '/home/data/piggybank.jar';
+define XPath org.apache.pig.piggybank.evaluation.xml.XPath();
+
+vData= LOAD '/user/Jig13895/vegeatblePriceData/VegData.xml' USING org.apache.pig.piggybank.storage.XMLLoader('Table') as (x:chararray);
+vout= FOREACH vData GENERATE XPath(x,'Table/State');
+dump vout;

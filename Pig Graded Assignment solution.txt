@@ -1,0 +1,136 @@
+Question: 
+
+Find the proportion of flights delayed. A flight is delayed if the delay is greater than 15 minutes. Compute the fraction of delayed flights per month in the year 2008. The delay could be any kind of delay (carrier delay, weather delay, etc)
+
+Hint:
+
+-- A flight is delayed if the delay is greater than 15 minutes.
+
+-- delay = arrival time - scheduled arrival time
+
+ -- Compute the fraction of delayed flights per different time
+
+-- granularities (hour, day, week, month, year)
+
+(let's focus on a month)
+
+Foreach month:
+
+ -- compute the total number of flights
+
+ -- compute delay relation: only those flights with delay > 15 min appear here
+
+ -- compute the total number of delayed flights
+
+ -- output relation: month, ratio delayed/total
+
+You need to calculate:
+•Fraction delay from the departure
+•Fraction delay due to carrier
+•Fraction delay due to weather
+
+ 
+
+--------------
+Note : to load we can also  like A = load '/home/hduser/DataAndScripts/AirlinesData_sample-1.csv' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',','NO_MULTILINE','UNIX','SKIP_INPUT_HEADER');
+
+Solution:
+---------
+
+--make new directory
+hadoop fs -mkdir pigGradedAssignment
+
+--move the input file to hdfs
+hadoop fs -put AirlinesData_sample-1.csv hdfs://nn.cdh2017.com:8020/user/Jig13895/pigGradedAssignment/
+hadoop fs -put Airlines_data.csv hdfs://nn.cdh2017.com:8020/user/Jig13895/pigGradedAssignment/
+
+--register the necessary jar
+register '/home/data/piggybank.jar';
+register '/home/Jig13895/minutes.jar';
+
+--load input file
+input_file = load 'hdfs://nn.cdh2017.com:8020/user/Jig13895/pigGradedAssignment/Airlines_data.csv' using org.apache.pig.piggybank.storage.CSVExcelStorage() AS
+ (year:int,month:int,day:int,dow:int,dtime:int,sdtime:int,arrtime:chararray,sarrtime:chararray,carrier:chararray,flightnum:int,tailnum:chararray,etime:int,setime:int,airtime:int,adelay:int,ddelay:int,scode:chararray,dcode:chararray,dist:int,tintime:int,touttime:int,cancel:chararray,cancelcode:chararray,diverted:int,cdelay:int,wdelay:int,ndelay:int,sdelay:int,latedelay:int);
+
+--dump input file
+dump input_file;
+
+--filter records by the given year
+filtered_out = FILTER input_file BY year == 2008;
+
+--transformed input file to convert local time to minutes to compute delay
+ip_file_modified= FOREACH filtered_out generate $0..$28, GetMinutes(arrtime), GetMinutes(sarrtime);
+
+--type conversion
+iip= FOREACH ip_file_modified generate $0..$28, (int)$29 as newArrTime,(int)$30 as newSArrTime;
+
+--compute the delay
+modified_out_2= FOREACH iip generate $0..$28,(newArrTime-newSArrTime) as actualdelay;
+
+dump modified_out_2;
+
+--group all flights by month
+grouped_out_1= GROUP modified_out_2 by month;
+
+--filter only delayed flights witm min >15
+delayed_out = FILTER modified_out_2 by actualdelay>15;
+
+dump delayed_out;
+
+--group all delayed flights by month
+grouped_out_2= GROUP delayed_out by month;
+
+--compute the total number of delayed flights for each month
+delayPerMonth= FOREACH grouped_out_2 generate group,COUNT(delayed_out.flightnum);
+result= order delayPerMonth by $1;
+dump result;
+
+-- compute the total number of flights
+grouped_out_3= GROUP modified_out_2 All;
+ttlFlights= FOREACH grouped_out_3 generate COUNT(modified_out_2.flightnum);
+dump ttlFlights;
+
+ -- compute the total number of delayed flights
+grouped_out_7= GROUP delayed_out All;
+ttlDelayedFlights= FOREACH grouped_out_7 generate COUNT(delayed_out.flightnum);
+dump ttlDelayedFlights;
+
+--compute delayed percentage
+--delayedPcnt=(ttlDelayedFlights/ttlFlights*100);
+--dump delayedPcnt;
+
+
+
+
+•Fraction delay from the departure
+
+--from the delayed out filter records where departure delay>15 min
+dept_delay_out= FILTER delayed_out BY $15>15;
+
+--compute the total number of delayed flights for each month due to departure delay
+grouped_out_4= GROUP dept_delay_out by month;
+dept_delayPerMonth= FOREACH grouped_out_4 generate group,COUNT(dept_delay_out.flightnum);
+
+dump dept_delayPerMonth;
+
+•Fraction delay due to carrier
+
+--from the delayed out filter records where carrire delay>15 min
+carrier_delay_out= FILTER delayed_out BY $24>15;
+
+--compute the total number of delayed flights for each month due to carrier delay
+grouped_out_5= GROUP carrier_delay_out by month;
+carrier_delayPerMonth= FOREACH grouped_out_5 generate group,COUNT(carrier_delay_out.flightnum);
+
+dump carrier_delayPerMonth;
+
+•Fraction delay due to weather
+
+--from the delayed out filter records where weather delay>15 min
+weather_delay_out= FILTER delayed_out BY $25>15;
+
+--compute the total number of delayed flights for each month due to weather delay
+grouped_out_6= GROUP weather_delay_out by month;
+weather_delayPerMonth= FOREACH grouped_out_6 generate group,COUNT(weather_delay_out.flightnum);
+
+dump weather_delayPerMonth;
